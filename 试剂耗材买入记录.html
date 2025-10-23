@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>李国飞课题组试剂与耗材买入记录</title>
+    <!-- 引入Handsontable库 -->
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+    <!-- 引入SheetJS库 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            background-color: #e3f2fd;
+            border-color: #2980b9;
+        }
+        .upload-area.dragover {
+            background-color: #d1ecf1;
+            border-color: #1abc9c;
+        }
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .upload-hint {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .file-input {
+            display: none;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #2980b9;
+        }
+        .button.export {
+            background-color: #2ecc71;
+        }
+        .button.export:hover {
+            background-color: #27ae60;
+        }
+        .button.reset {
+            background-color: #e74c3c;
+        }
+        .button.reset:hover {
+            background-color: #c0392b;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .table-container {
+            overflow: auto;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        #dataTable {
+            width: 100%;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .instructions ul {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>李国飞课题组试剂与耗材买入记录</h1>
+            <p class="description">上传、编辑和管理试剂与耗材购买记录</p>
+        </header>
+        
+        <div class="upload-area" id="dropArea">
+            <div class="upload-icon">📁</div>
+            <p class="upload-text">拖拽Excel文件到这里或点击上传</p>
+            <p class="upload-hint">支持.xlsx、.xls格式</p>
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+        </div>
+        
+        <div class="controls">
+            <div>
+                <button class="button" id="addRowBtn">添加行</button>
+                <button class="button reset" id="resetBtn">重置数据</button>
+            </div>
+            <div>
+                <button class="button export" id="exportBtn">导出Excel</button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <div id="dataTable"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li>拖拽Excel文件到上传区域或点击上传</li>
+                <li>表格支持直接编辑，双击单元格即可修改内容</li>
+                <li>点击列标题可以进行排序</li>
+                <li>使用列标题右侧的筛选图标可以进行数据筛选</li>
+                <li>点击"添加行"按钮可以在表格末尾添加新行</li>
+                <li>点击"导出Excel"按钮可以将当前表格导出为Excel文件</li>
+                <li>点击"重置数据"按钮可以清空当前表格</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>李国飞课题组 &copy; 2023 - 试剂与耗材买入记录管理系统</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const dropArea = document.getElementById('dropArea');
+            const fileInput = document.getElementById('fileInput');
+            const dataTable = document.getElementById('dataTable');
+            const addRowBtn = document.getElementById('addRowBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            // 初始化数据
+            let allData = [];
+            let hot;
+            
+            // 初始化表格
+            function initTable(data) {
+                if (hot) {
+                    hot.destroy();
+                }
+                
+                hot = new Handsontable(dataTable, {
+                    data: data,
+                    colHeaders: true,
+                    rowHeaders: true,
+                    filters: true,
+                    dropdownMenu: true,
+                    contextMenu: true,
+                    manualColumnResize: true,
+                    manualRowResize: true,
+                    columnSorting: true,
+                    licenseKey: 'non-commercial-and-evaluation'
+                });
+            }
+            
+            // 读取Excel文件
+            function readExcelFile(file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 获取第一个工作表
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // 转换为JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // 处理数据
+                    processExcelData(jsonData);
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+            
+            // 处理Excel数据
+            function processExcelData(data) {
+                if (data.length === 0) return;
+                
+                // 如果有标题行，使用标题行
+                const headers = data[0];
+                
+                // 数据行
+                const rows = data.length > 1 ? data.slice(1) : [];
+                
+                // 合并到现有数据
+                if (allData.length === 0) {
+                    allData = [headers].concat(rows);
+                } else {
+                    // 检查列是否匹配
+                    const existingHeaders = allData[0];
+                    if (JSON.stringify(existingHeaders) === JSON.stringify(headers)) {
+                        allData = allData.concat(rows);
+                    } else {
+                        alert('上传的表格列结构与现有数据不匹配，将替换现有数据。');
+                        allData = [headers].concat(rows);
+                    }
+                }
+                
+                // 初始化表格
+                initTable(allData);
+            }
+            
+            // 导出为Excel
+            function exportToExcel() {
+                if (allData.length === 0) {
+                    alert('没有数据可导出');
+                    return;
+                }
+                
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                
+                // 创建工作表
+                const ws = XLSX.utils.aoa_to_sheet(allData);
+                
+                // 将工作表添加到工作簿
+                XLSX.utils.book_append_sheet(wb, ws, '试剂耗材买入记录');
+                
+                // 导出文件
+                XLSX.writeFile(wb, '李国飞课题组试剂与耗材买入记录.xlsx');
+            }
+            
+            // 事件监听器
+            dropArea.addEventListener('click', () => fileInput.click());
+            
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('dragover');
+            });
+            
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('dragover');
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    readExcelFile(files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    readExcelFile(e.target.files[0]);
+                }
+            });
+            
+            addRowBtn.addEventListener('click', () => {
+                if (hot) {
+                    hot.alter('insert_row');
+                }
+            });
+            
+            exportBtn.addEventListener('click', exportToExcel);
+            
+            resetBtn.addEventListener('click', () => {
+                if (confirm('确定要重置所有数据吗？此操作不可撤销。')) {
+                    allData = [];
+                    if (hot) {
+                        hot.destroy();
+                    }
+                    initTable([]);
+                }
+            });
+            
+            // 初始化空表格
+            initTable([]);
+        });
+    </script>
+</body>
+</html>
